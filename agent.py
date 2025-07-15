@@ -1,17 +1,15 @@
 import os
 from langchain_openai import ChatOpenAI
-from db import add_agent_entry, setup_database  # Use db.py, not mcp
+from db import setup_database
+from mcp import add_to_story
 from llm import llm
-
-# Ensure the database file and table exist before running
-print("Setting up database...")
-setup_database()
 
 # --- Agent Creation ---
 # 1. Choose the LLM model that will be the "brain" of the agent
+setup_database()
 
 # 2. Define the list of tools the agent can use
-tools = [add_agent_entry]
+tools = [add_to_story]
 
 # 3. Bind the tools to the LLM
 # This tells the model that it has these actions available
@@ -20,12 +18,11 @@ llm_with_tools = llm.bind_tools(tools)
 # --- Running the Agent ---
 # This is the high-level task for the agent.
 # Notice it's just natural language.
-prompt = "Hello, I am agent-alpha and I'd like to add a creative prompt to the overall prompt block"
+prompt = "Continue the collaborative story with a new twist about a mysterious stranger arriving."
 
 print(f"\nInvoking agent with prompt: '{prompt}'")
 
 # The agent's brain (the LLM) processes the prompt and the available tools.
-# It recognizes that "make a note" matches the purpose of the `add_agent_entry` tool.
 response = llm_with_tools.invoke(prompt)
 
 print("\n--- Agent Response ---")
@@ -49,6 +46,6 @@ if tool_calls:
     print(f"Arguments: {tool_args}")
 
     # Execute the function with the arguments provided by the LLM
-    # The add_agent_entry tool expects keyword arguments
-    result = add_agent_entry.invoke(tool_args)
+    # The add_to_story tool expects keyword arguments
+    result = add_to_story.invoke(tool_args)
     print(f"\nTool execution result: {result}")

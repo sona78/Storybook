@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from langchain_core.tools import tool
 import os
+from datetime import datetime, date
 
 # This setup is just to configure SQLAlchemy, not to run a web server.
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -10,16 +10,15 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'ag
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# Define the database table structure as a linked list
+# Define the database table structure as an array with per-day incremental ids
 class AgentEntry(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    agent_id = db.Column(db.String(80), nullable=False)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     content = db.Column(db.String(1000), nullable=False)
-    next_id = db.Column(db.Integer, db.ForeignKey('agent_entry.id'), nullable=True)
-    next = db.relationship('AgentEntry', remote_side=[id], uselist=False)
+    date = db.Column(db.Date, nullable=False)
+    date_incremental_id = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
-        return f"<AgentEntry id={self.id} agent_id={self.agent_id} content={self.content} next_id={self.next_id}>"
+        return f"<AgentEntry id={self.id} content={self.content} date={self.date} date_incremental_id={self.date_incremental_id}>"
 
 def get_entry_id_by_content(content: str):
     """
@@ -33,93 +32,69 @@ def get_entry_id_by_content(content: str):
         else:
             return None
 
-# This decorator turns our Python function into a "tool" the agent can use.
-@tool
-def add_agent_entry(agent_id: str, content: str, previousContent: str = "") -> str:
+def add_agent_entry(content: str) -> str:
     """
-    Use this tool to add a new entry to the agent database as a linked list.
-    Provide the agent_id and the text content you want to record.
-    If this is the first addition to the database, set id as 0 and next_id as None.
-    Each new entry is appended to the end of the linked list.
+    Use this tool to add a new entry to the agent database.
+    Provide the text content you want to record.
+    Each new entry gets a date_incremental_id that starts from 0 for each day.
     """
     try:
         with app.app_context():
-            # Find the last entry in the linked list (where next_id is None)
-            last_entry = AgentEntry.query.filter_by(next_id=None).order_by(AgentEntry.id.desc()).first()
-            if not last_entry:
-                # First entry: set id to 0 explicitly
-                new_entry = AgentEntry(id=0, agent_id=agent_id, content=content, next_id=None)
-                db.session.add(new_entry)
-                db.session.commit()
-                return f"Success! First entry with ID {new_entry.id} was added for agent {agent_id}."
-            elif previousContent:
-                prev_id = get_entry_id_by_content(previousContent)
-                prev = AgentEntry.query.get(prev_id)
-                if prev_id != None and prev != None:
-                    new_entry = AgentEntry(agent_id=agent_id, content=content, next_id=prev.id)
-                    db.session.add(new_entry)
-                    db.session.flush()  # Get new_entry.id before commit
-                    prev.next_id = new_entry.id
-                    db.session.commit()
-                    return f"Success! Entry with ID {new_entry.id} was added for agent {agent_id}, linked from previous content '{previousContent}' (ID {prev.id})."
-                else:
-                    return f"Error: Could not find previous content '{previousContent}' in database."
+            today = date.today()
+            # Find the max date_incremental_id for today
+            last_entry = (
+                AgentEntry.query.filter_by(date=today)
+                .order_by(AgentEntry.date_incremental_id.desc())
+                .first()
+            )
+            if last_entry is None:
+                new_date_incremental_id = 0
             else:
-                # Add new entry and update the last entry's next_id
-                new_entry = AgentEntry(agent_id=agent_id, content=content, next_id=None)
-                db.session.add(new_entry)
-                db.session.flush()  # Get new_entry.id before commit
-                last_entry.next_id = new_entry.id
-                db.session.commit()
-                return f"Success! Entry with ID {new_entry.id} was added for agent {agent_id}, linked from ID {last_entry.id}."
+                new_date_incremental_id = last_entry.date_incremental_id + 1
+
+            new_entry = AgentEntry(
+                content=content,
+                date=today,
+                date_incremental_id=new_date_incremental_id
+            )
+            db.session.add(new_entry)
+            db.session.commit()
+            return (
+                f"Success! Entry with global ID {new_entry.id}, date {today}, "
+                f"date_incremental_id {new_entry.date_incremental_id} was added."
+            )
     except Exception as e:
         return f"Error: Could not add entry to database. Details: {e}"
 
-
-
 def create_combined_prompt():
     """
-    Combines all content in the agent database in linked list order and returns as a single string.
+    Combines all content in the agent database in array order (by date, then date_incremental_id) and returns as a single string.
     """
     with app.app_context():
-        # Find the head of the linked list (entry not pointed to by any next_id)
-        all_ids = {entry.id for entry in AgentEntry.query.all()}
-        pointed_ids = {entry.next_id for entry in AgentEntry.query.filter(AgentEntry.next_id != None)}
-        head_ids = list(all_ids - pointed_ids)
-        if not head_ids:
+        entries = (
+            AgentEntry.query.order_by(AgentEntry.date.asc(), AgentEntry.date_incremental_id.asc()).all()
+        )
+        if not entries:
             return ""
-        head_id = min(head_ids)  # If multiple heads, pick the smallest id
-        current = AgentEntry.query.get(head_id)
-        contents = []
-        while current:
-            contents.append(current.content)
-            if current.next_id is not None:
-                current = AgentEntry.query.get(current.next_id)
-            else:
-                break
+        contents = [entry.content for entry in entries]
         return "\n".join(contents)
-
 
 def print_all_agent_entries():
     """
-    Prints all entries in the agent database in linked list order.
+    Prints all entries in the agent database in array order (by date, then date_incremental_id).
     """
     with app.app_context():
-        # Find the head of the linked list (entry not pointed to by any next_id)
-        all_ids = {entry.id for entry in AgentEntry.query.all()}
-        pointed_ids = {entry.next_id for entry in AgentEntry.query.filter(AgentEntry.next_id != None)}
-        head_ids = list(all_ids - pointed_ids)
-        if not head_ids:
+        entries = (
+            AgentEntry.query.order_by(AgentEntry.date.asc(), AgentEntry.date_incremental_id.asc()).all()
+        )
+        if not entries:
             print("No entries found in the database.")
             return
-        head_id = min(head_ids)  # If multiple heads, pick the smallest id
-        current = AgentEntry.query.get(head_id)
-        while current:
-            print(f"ID: {current.id}, Agent ID: {current.agent_id}, Content: {current.content}, Next ID: {current.next_id}")
-            if current.next_id is not None:
-                current = AgentEntry.query.get(current.next_id)
-            else:
-                break
+        for entry in entries:
+            print(
+                f"ID: {entry.id}, Content: {entry.content}, "
+                f"Date: {entry.date}, Date Incremental ID: {entry.date_incremental_id}"
+            )
 
 # A helper function to ensure the database is created
 def setup_database():
