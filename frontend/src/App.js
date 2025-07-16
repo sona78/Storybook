@@ -1,12 +1,12 @@
-import 'bootstrap/dist/css/bootstrap.min.css';
-import React, { useEffect, useState } from 'react';
-import { Card, Container, Row, Col, Button } from 'react-bootstrap';
+import React, { useEffect, useState, useRef } from 'react';
+import HTMLFlipBook from 'react-pageflip';
 import './App.css';
 
 function App() {
   const [promptSections, setPromptSections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const pageRef = useRef(null);
 
   useEffect(() => {
     loadPrompt();
@@ -36,141 +36,91 @@ function App() {
       });
   };
 
-  const copyToClipboard = () => {
-    const text = promptSections.join('\n');
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text).then(() => {
-        showNotification('Copied to clipboard!');
-      }).catch(err => {
-        showNotification('Failed to copy: ' + err);
-      });
-    } else {
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      showNotification('Copied to clipboard!');
-    }
-  };
+  // Use an online old paper texture image
+  const texturedPageUrl =
+    'https://www.transparenttextures.com/patterns/old-mathematics.png';
 
-  const downloadPrompt = () => {
-    const text = promptSections.join('\n');
-    if (text && !loading && !error && !text.includes('No content found')) {
-      const blob = new Blob([text], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'combined-prompt.txt';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      showNotification('Download started!');
-    } else {
-      showNotification('No content to download');
-    }
-  };
+  // Brownish old paper color
+  const oldPaperColor = '#f5ecd7'; // Lighter, more paper-like
+  const oldPaperTextColor = '#3e2c1a'; // Deep brown for text
 
-  const showNotification = (message) => {
-    const notification = document.createElement('div');
-    notification.textContent = message;
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #28a745;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 5px;
-      z-index: 1000;
-      animation: slideIn 0.3s ease;
-    `;
-    document.body.appendChild(notification);
-    setTimeout(() => {
-      notification.style.animation = 'slideOut 0.3s ease';
-      setTimeout(() => {
-        document.body.removeChild(notification);
-      }, 300);
-    }, 2000);
-  };
-
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-      }
-      @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-      }
-      .hover-card {
-        transition: box-shadow 0.3s, transform 0.3s;
-        cursor: pointer;
-      }
-      .hover-card:hover {
-        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3), 0 1.5px 6px rgba(0,0,0,0.08);
-        transform: translateY(-4px) scale(1.03);
-        background: #f0f4ff;
-      }
-      .card-index {
-        display: none;
-        position: absolute;
-        top: 10px;
-        right: 20px;
-        font-size: 1.2rem;
-        color: #764ba2;
-        font-weight: bold;
-      }
-      .hover-card:hover .card-index {
-        display: block;
-      }
-    `;
-    document.head.appendChild(style);
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
+  // Slightly off-white background for the app, not pure black
+  const appBackground = '#e9e4d8';
 
   return (
-    <Container className="container mt-5">
-      <div className="header">
-        <h1>CrowdWork</h1>
-        <p>Combined Prompt Viewer</p>
-      </div>
-      <div className="canvas-container">
-        {loading ? (
-          <div className="loading">Loading combined prompt...</div>
-        ) : error ? (
-          <div className="error">Error: {error}</div>
-        ) : promptSections.length === 0 ? (
-          <div className="empty-state">No content found in database. Add some entries to see them here.</div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {promptSections.map((section, idx) => (
-              <Card
+    <div
+      style={{
+        background: appBackground,
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
+      {loading ? (
+        <div className="loading-message" style={{ color: '#3e2c1a' }}>Loading...</div>
+      ) : error ? (
+        <div className="error-message" style={{ color: 'red' }}>{error}</div>
+      ) : (
+        <HTMLFlipBook
+          width={350}
+          height={500}
+          ref={pageRef}
+          style={{
+            boxShadow: '0 8px 32px 0 rgba(0,0,0,0.18)',
+            borderRadius: '10px',
+            background: oldPaperColor
+          }}
+        >
+          {promptSections.length === 0 ? (
+            <div
+              className="page"
+              style={{
+                backgroundColor: oldPaperColor,
+                backgroundImage: `url(${texturedPageUrl})`,
+                backgroundSize: 'auto',
+                backgroundRepeat: 'repeat',
+                color: oldPaperTextColor,
+                fontFamily: '"Times New Roman", Times, serif',
+                padding: '2em',
+                minHeight: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 8px 0 rgba(60,40,20,0.10)'
+              }}
+            >
+              <span>No story to display.</span>
+            </div>
+          ) : (
+            promptSections.map((section, idx) => (
+              <div
                 key={idx}
-                className="hover-card position-relative mb-3"
-                style={{ width: '100%' }}
+                className="page"
+                style={{
+                  backgroundColor: oldPaperColor,
+                  backgroundImage: `url(${texturedPageUrl})`,
+                  backgroundSize: 'auto',
+                  backgroundRepeat: 'repeat',
+                  color: oldPaperTextColor,
+                  fontFamily: '"Times New Roman", Times, serif',
+                  padding: '2em',
+                  minHeight: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.1em',
+                  lineHeight: '1.6',
+                  boxShadow: '0 2px 8px 0 rgba(60,40,20,0.10)'
+                }}
               >
-                <Card.Body>
-                  <span className="card-index">#{idx + 1}</span>
-                  <Card.Text style={{ whiteSpace: 'pre-wrap' }}>{section}</Card.Text>
-                </Card.Body>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="controls mt-4">
-        <Button variant="primary" onClick={loadPrompt}>Refresh Prompt</Button>
-        <Button variant="secondary" onClick={copyToClipboard}>Copy to Clipboard</Button>
-        <Button variant="secondary" onClick={downloadPrompt}>Download as TXT</Button>
-      </div>
-    </Container>
+                <span>{section}</span>
+              </div>
+            ))
+          )}
+        </HTMLFlipBook>
+      )}
+    </div>
   );
 }
 

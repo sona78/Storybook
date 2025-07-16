@@ -1,5 +1,3 @@
-import os
-from langchain_openai import ChatOpenAI
 from db import setup_database
 from mcp import add_to_story
 from llm import llm
