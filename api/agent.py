@@ -1,10 +1,10 @@
-from db import setup_database
+
 from mcp import add_to_story
-from llm import llm
+from clients import llm
 
 # --- Agent Creation ---
 # 1. Choose the LLM model that will be the "brain" of the agent
-setup_database()
+
 
 # 2. Define the list of tools the agent can use
 tools = [add_to_story]
@@ -16,7 +16,7 @@ llm_with_tools = llm.bind_tools(tools)
 # --- Running the Agent ---
 # This is the high-level task for the agent.
 # Notice it's just natural language.
-prompt = "Continue the collaborative story with a new twist about a mysterious stranger arriving."
+prompt = "I want an adventure to start"
 
 print(f"\nInvoking agent with prompt: '{prompt}'")
 

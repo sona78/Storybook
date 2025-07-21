@@ -1,0 +1,180 @@
+import './App.css';
+import React, { useEffect, useState, useRef } from 'react';
+import HTMLFlipBook from 'react-pageflip';
+
+
+function App() {
+  const [promptSections, setPromptSections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const pageRef = useRef(null);
+
+  useEffect(() => {
+    loadPrompt();
+    // eslint-disable-next-line
+  }, []);
+
+  const loadPrompt = () => {
+    setLoading(true);
+    setError('');
+    fetch('/api/storybook')
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data)
+        // get all content fields and store in array from data (data is an array of objects)
+        console.log(data.map(entry => entry.content))
+        setPromptSections([])
+        // if (data.error) {
+        //   setError(data.error);
+        //   setPromptSections([]);
+        // } else {
+        //   console.log(data)
+        //   setPromptSections(data.prompt);
+        // }
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError('Failed to load prompt: ' + err.message);
+        setPromptSections([]);
+        setLoading(false);
+      });
+  };
+
+  // Use an online old paper texture image
+  const texturedPageUrl = 'https://www.transparenttextures.com/patterns/light-paper-fibers.png';
+
+  // Brownish old paper color
+  const oldPaperColor = '#f5ecd7'; // Lighter, more paper-like
+  const oldPaperTextColor = '#3e2c1a'; // Deep brown for text
+
+  const Cover = React.forwardRef((props, ref) => {
+    return (
+      <div
+        className='page'
+        ref={ref}
+        style={{
+          position: "relative",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            borderRadius: "8px",
+            padding: "40px 60px",
+            textAlign: "center",
+          }}
+        >
+          <h1
+            style={{
+              fontFamily: '"Times New Roman", Times, serif',
+              color: "#5a4321",
+              fontSize: "2.5rem",
+              marginBottom: "0.5em",
+              letterSpacing: "2px",
+              textShadow: "0 2px 8px #e9e4d8",
+            }}
+          >
+            My Hardcover Book
+          </h1>
+          <h3
+            style={{
+              fontFamily: '"Times New Roman", Times, serif',
+              color: "#7c6240",
+              fontWeight: "normal",
+              marginTop: "0",
+              fontSize: "1.2rem",
+              letterSpacing: "1px",
+            }}
+          >
+            by Author Name
+          </h3>
+        </div>
+      </div>
+    );
+  });
+
+  const Page = React.forwardRef((props, ref) => {
+    return (
+      <div className="page" ref={ref}>
+          <div className="page-front">
+                      <div className="image-section" style={{
+                        height: '150px',
+                        border: '1px solid #d0c8b8',
+                        margin: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '4px' }}>
+                        <span style={{ color: '#8b7355', fontStyle: 'italic' }}>Image Placeholder</span>
+                      </div>
+                      
+                      {/* Text content */}
+                      <div className="text-content" style={{
+                        fontFamily: '"Times New Roman", Times, serif',
+                        lineHeight: '1.5',
+                        marginBottom: 40,
+                        padding: 20,
+                        color: oldPaperTextColor }}>
+                        {props.content}
+                      </div>
+                      
+                      {/* Page number in bottom corner */}
+                      <div className="page-number" style={{
+                        position: 'absolute',
+                        bottom: '20px',
+                        right: '20px',
+                        fontFamily: '"Times New Roman", Times, serif',
+                        fontSize: '14px',
+                        color: '#6b5b47',
+                        fontWeight: 'normal' }}>
+                        Page {props.number + 1}
+                      </div>
+            
+        </div>
+      </div>
+    );
+  });
+
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#5c4018',
+        backgroundImage: 'url("https://www.transparenttextures.com/patterns/purty-wood.png")'
+      }}
+    >
+      {loading ? (
+        <div className="loading-message" style={{ color: '#3e2c1a' }}>Loading...</div>
+      ) : error ? (
+        <div className="error-message" style={{ color: 'red' }}>{error}</div>
+      ) : (
+        
+        <HTMLFlipBook
+          width={350}
+          height={500}
+          ref={pageRef}
+          showCover={true}
+        >
+          <Cover/>
+        { promptSections.map((section, idx) => (
+              <Page
+                number={idx}
+                content={section}
+                type="Image"
+              />
+            ))
+          }
+        </HTMLFlipBook>
+      )}
+    </div>
+  );
+}
+
+export default App;

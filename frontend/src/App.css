@@ -1,137 +1,19 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+.page {
+    border: 1px solid #c9c9c9;
+    background-color: rgba(255, 245, 220);
+    background-image: url("https://www.transparenttextures.com/patterns/handmade-paper.png");
+    
+    /* overflow: hidden; */
+  }
 
-.container {
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    padding: 30px;
-    max-width: 800px;
+  
+  .page-front {
+    /* position: absolute; */
     width: 100%;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 40px auto;
-}
-
-.header {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.header h1 {
-    color: #333;
-    font-size: 2.5rem;
-    margin-bottom: 10px;
-    font-weight: 300;
-}
-
-.header p {
-    color: #666;
-    font-size: 1.1rem;
-}
-
-.canvas-container {
-    position: relative;
-    margin-bottom: 20px;
-}
-
-.canvas-area {
-    width: 100%;
-    min-height: 400px;
-    border: 2px dashed #ddd;
-    border-radius: 10px;
-    padding: 20px;
-    background: #f8f9fa;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 1.6;
-    color: #333;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-y: auto;
-    resize: vertical;
-}
-
-.canvas-area:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.controls {
-    display: flex;
-    gap: 15px;
+    height: 100%;
+    backface-visibility: hidden; /* This is key! */
+    /* display: flex;
     justify-content: center;
-    flex-wrap: wrap;
-}
-
-.btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    display: inline-block;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-}
-
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-secondary:hover {
-    background: #5a6268;
-    transform: translateY(-2px);
-}
-
-.loading {
-    text-align: center;
-    color: #666;
-    font-style: italic;
-}
-
-.error {
-    color: #dc3545;
-    background: #f8d7da;
-    border: 1px solid #f5c6cb;
-    border-radius: 5px;
-    padding: 10px;
-    margin: 10px 0;
-}
-
-.empty-state {
-    text-align: center;
-    color: #666;
-    font-style: italic;
-    padding: 40px;
-}
-
-@media (max-width: 768px) {
-    .container {
-        padding: 20px;
-    }
-    
-    .header h1 {
-        font-size: 2rem;
-    }
-    
-    .controls {
-        flex-direction: column;
-        align-items: center;
-    }
-}
+    align-items: center;
+    padding: 10px */
+  }
